@@ -415,19 +415,71 @@ return () => {
 
 ---
 
-## Decisions NOT Yet Implemented (Pending)
+### 20. Deleted Unused WebP Images (DONE)
+
+**Files deleted:** `next.webp`, `next1.webp`, `nextBL.webp`, `node.webp`, `react.webp`, `placeholder.webp` from `public/images/`.
+
+**Why:** Grep confirmed these 6 files (~1.7MB total) are not referenced anywhere in source code. Leftover from previous design iterations. Keeping them bloats repo size.
+
+---
+
+### 21. Deleted Dead Code Files (DONE)
+
+**Files deleted:** `test.js`, `public/models/encrypt.cjs`, `src/components/Character/exports.ts`
+
+**Why:**
+- `test.js` — Orphaned scratch file referencing `clickElement` and `video` without context. Not a real test, not imported anywhere.
+- `encrypt.cjs` — Node.js encryption script leftover from the removed encryption system (Decision #5). Publicly accessible at `/models/encrypt.cjs` — no reason to keep it.
+- `exports.ts` — Empty file (0 bytes) in Character directory. Pure dead code.
+
+---
+
+### 22. Updated MIT License (DONE)
+
+**File changed:** `LICENSE`
+
+**What:** Updated copyright holder to "Shivansh Mishra" as part of the rebranding.
+
+**Why:** MIT license permits derivative works. Updating the copyright reflects the new owner.
+
+---
+
+### 23. Squashed Git History (DONE)
+
+**What:** Used `git checkout --orphan` to create a new branch with a single commit, then force-pushed to replace the remote.
+
+**Before:** 4 commits (Initial commit, optimization, license update, preview image)
+**After:** 1 commit ("Initial commit: Shivansh Mishra's portfolio website")
+
+**Why:** User requested clean history with no trace of iterative bug fixes. For a personal portfolio, clean history is preferred over preserving blame/debug information.
+
+**Tradeoff:** Cannot `git blame` individual changes. Acceptable since all decisions are documented in this file.
+
+---
+
+### 24. Created Relevant Code Reviews File (DONE)
+
+**File created:** `relevant_code_reviews.md`
+
+**What:** Categorized all 55 findings from `code_review.md` into three groups:
+- **Already Fixed (11)** — everything resolved this session
+- **Relevant / Should Fix (21)** — bugs, memory leaks, dead links, asset bloat that affect recruiters
+- **Not Relevant / Safe to Ignore (23)** — enterprise-grade nitpicks that don't matter for a portfolio
+
+**Why:** The raw code review has 55 findings which is overwhelming. This file explains WHY each issue matters (or doesn't) in the context of a personal portfolio visited by recruiters, not a production SaaS app.
+
+---
+
+## Remaining Items (Pending)
 
 | # | Decision | Priority | Status |
 |---|----------|----------|--------|
-| 1 | Full rebrand (name, bio, career, links) | High | Done (prior session) |
-| 2 | Replace `gsap-trial` with `gsap` | High | Done (user did manually) |
-| 3 | Fix event listener memory leaks | High | Done (#13) |
-| 4 | Add SEO meta tags | High | Pending |
-| 5 | Fix dead resume link | Medium | Pending |
-| 6 | Add `rel="noopener noreferrer"` to links | Medium | Pending |
-| 7 | Fix invalid CSS values | Medium | Pending |
-| 9 | Delete orphaned `test.js` | Low | Pending |
-| 10 | Push to GitHub | High | Pending |
+| 1 | Add SEO meta tags + Open Graph + favicon | High | Pending |
+| 2 | Fix dead resume button link | High | Pending |
+| 3 | Add `rel="noopener noreferrer"` to external links | Medium | Pending |
+| 4 | Fix remaining memory leaks (Cursor.tsx, SocialIcons.tsx, Navbar.tsx) | Medium | Pending |
+| 5 | Fix WorkImage.tsx production asset path | Medium | Pending |
+| 6 | Fix invalid CSS values (About.css) | Low | Pending |
 
 ---
 
@@ -443,14 +495,17 @@ return () => {
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Total asset size | ~42 MB | ~8 MB |
+| Total asset size | ~42 MB | ~5 MB |
 | Project images | 34 MB (PNG) | 954 KB (WebP) |
 | Duplicate model files | 4.6 MB | 2.3 MB |
+| Unused image assets | ~1.7 MB | Deleted |
+| Dead files | 3 files | Deleted |
 | Unused dependencies | @react-three/cannon | Removed |
 | Encryption overhead | 500ms-2s/load | 0 |
 | Mobile GPU pixel load (3x) | 9x | 2.25x (capped at 2) |
 | Mobile post-processing | N8AO every frame | Disabled |
 | Image loading strategy | Preloaded during loading screen | Cached before visible |
+| Git commits | 4 | 1 (squashed) |
 
 ## Summary of Bug Fixes
 
