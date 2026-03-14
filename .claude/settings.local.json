@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/Shivansh/Desktop/PROzz/shivans-portfolio -type f \\\\\\(-name *resume* -o -name *cv* -o -name *.pdf \\\\\\))",
+      "Bash(grep -r \"rajesh\\\\|chityal\\\\|Rajesh\\\\|Chityal\" /c/Users/Shivansh/Desktop/PROzz/shivans-portfolio/*.html /c/Users/Shivansh/Desktop/PROzz/shivans-portfolio/*.md)",
+      "WebFetch(domain:www.linkedin.com)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx --version)",
+      "Bash(curl -s http://localhost:5173)",
+      "WebFetch(domain:www.moncy.dev)",
+      "Bash(du -sh /c/Users/Shivansh/Desktop/PROzz/shivans-portfolio/node_modules/*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(find public/ -type f \\\\\\(-name *.png -o -name *.jpg -o -name *.glb -o -name *.enc \\\\\\))",
+      "Bash(ls -lh public/images/*.png)",
+      "Bash(npx --yes sharp-cli --version)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(npx --yes sharp-cli -i public/images/bond.png -o public/images/bond.webp --quality 80)",
+      "Bash(ls -lh \"C:/Users/Shivansh/Desktop/PROzz/shivans-portfolio/public/images/\"*.webp)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(done)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
