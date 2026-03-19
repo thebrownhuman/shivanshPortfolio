@@ -43,15 +43,13 @@ const setCharacter = (
                 mesh.frustumCulled = true;
               }
             });
-            resolve(gltf);
             setCharTimeline(character, camera);
             setAllTimeline();
             character!.getObjectByName("footR")!.position.y = 3.36;
             character!.getObjectByName("footL")!.position.y = 3.36;
 
-            // Monitor scale is handled by GsapScroll.ts animations
-
             dracoLoader.dispose();
+            resolve(gltf);
           },
           undefined,
           (error) => {

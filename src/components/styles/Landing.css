@@ -74,21 +74,6 @@
   }
 }
 
-.landing-video,
-.landing-image {
-  position: absolute;
-  bottom: 0;
-  height: 95%;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.landing-image img {
-  height: 100%;
-  z-index: 2;
-  position: relative;
-}
-
 .character-rim {
   position: absolute;
   width: 400px;
@@ -143,12 +128,6 @@
   transform: translateX(-50%);
   z-index: 9;
   position: absolute;
-}
-
-.character-loaded .character-rim {
-  animation: backlight 3s forwards;
-  animation-delay: 0.3s;
-  opacity: 0;
 }
 
 .character-model canvas {

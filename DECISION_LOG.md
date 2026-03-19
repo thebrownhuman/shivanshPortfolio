@@ -470,16 +470,78 @@ return () => {
 
 ---
 
+### 25. Code Review Fixes — Session 2 (2026-03-15)
+
+All 15 relevant issues from `relevant_code_reviews.md` fixed in one batch. Zero visual changes.
+
+**R13. Added `rel="noopener noreferrer"` to all external links**
+- Files: `SocialIcons.tsx`, `Contact.tsx`, `WorkImage.tsx`
+- All `target="_blank"` links now have proper security attributes
+
+**R14. Changed `overflow: clip` → `overflow: hidden`**
+- File: `src/index.css` (`.techstack` class)
+- `overflow: clip` has limited Safari support. `overflow: hidden` is equivalent here.
+
+**R1. Removed dead video hover feature from WorkImage.tsx**
+- Removed `useState`, `handleMouseEnter`, `onMouseLeave`, `video` prop, `<video>` element
+- The `fetch("src/assets/...")` path would 404 in production, and no project uses the video prop
+
+**R2. Fixed Loading.tsx side effects during render**
+- Moved `if (percent >= 100) { setTimeout(...) }` from render body into `useEffect([percent])`
+- Old code spawned duplicate timers on every re-render when percent >= 100
+
+**R3. Fixed Cursor.tsx RAF + event listener leaks**
+- Stored RAF ID for `cancelAnimationFrame` in cleanup
+- Named `onMouseMove` function for proper `removeEventListener`
+- Stored `mouseover`/`mouseout` handler references for proper cleanup
+
+**R4 + R9. Fixed SocialIcons.tsx RAF leak + stale rect + wrong cleanup**
+- Stored RAF IDs in array, cancel all in cleanup
+- Changed cleanup to remove from `document` (where listeners were added), not `elem`
+- Recalculate `getBoundingClientRect()` on every mousemove instead of caching once at mount
+
+**R5. Fixed Navbar.tsx resize + click listener leaks**
+- Named `onResize` function, stored click handler references
+- Proper `removeEventListener` in cleanup for both
+
+**R6. Fixed Scene.tsx stacking touchmove listeners**
+- Replaced `touchstart → addEventListener("touchmove")` pattern with single `touchmove` listener on `landingDiv`
+- Old code added a new anonymous `touchmove` handler on every touch = memory leak
+
+**R7. Fixed splitText.ts recursive ScrollTrigger refresh listener**
+- Added `refreshListenerAdded` guard flag
+- Without it: every `setSplitText()` call added another "refresh" listener → exponential growth on resize
+
+**R8. Fixed TechStack.tsx random material in render**
+- Pre-computed `materialIndex` per sphere at module level
+- Old code: `materials[Math.floor(Math.random() * materials.length)]` in JSX = different material on every re-render
+
+**R10. Fixed character.ts race condition**
+- Moved `resolve(gltf)` after `setCharTimeline`, `setAllTimeline`, and bone positioning
+- Old code resolved the promise before setup was complete
+
+**R12. Added SEO meta tags to index.html**
+- Added: meta description, Open Graph tags (title, description, image, url, type), Twitter Card tags, favicon
+- OG image points to `/images/preview.png` at `shivanshmishra.in`
+
+**R20. Deleted unused CSS classes**
+- Removed `.loading-icon` (3 rules) from Loading.css
+- Removed `.check-line` from SocialIcons.css
+- Removed `.landing-video`, `.landing-image` from Landing.css
+- Removed `.character-loaded .character-rim` from Landing.css
+
+**R21. Removed empty useEffect from LoadingProvider.tsx**
+- `useEffect(() => {}, [loading])` did nothing. Removed along with unused `useEffect` import.
+
+---
+
 ## Remaining Items (Pending)
 
-| # | Decision | Priority | Status |
-|---|----------|----------|--------|
-| 1 | Add SEO meta tags + Open Graph + favicon | High | Pending |
-| 2 | Fix dead resume button link | High | Pending |
-| 3 | Add `rel="noopener noreferrer"` to external links | Medium | Pending |
-| 4 | Fix remaining memory leaks (Cursor.tsx, SocialIcons.tsx, Navbar.tsx) | Medium | Pending |
-| 5 | Fix WorkImage.tsx production asset path | Medium | Pending |
-| 6 | Fix invalid CSS values (About.css) | Low | Pending |
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| R11 | Fix dead resume button link (`SocialIcons.tsx:77` has `href="#"`) | Critical | Waiting for resume PDF from Shivansh. Once provided: place in `public/`, update href to `/resume.pdf` with `target="_blank" rel="noopener noreferrer"` |
+
+**Everything else from `relevant_code_reviews.md` is DONE.** 31 out of 32 relevant issues fixed across 2 sessions. Only R11 remains.
 
 ---
 
@@ -517,6 +579,16 @@ return () => {
 | Carousel bleed on mobile | No overflow clipping | overflow: hidden on slide containers |
 | WhatIDo invisible on mobile | GSAP ScrollTrigger unreliable with ScrollSmoother on mobile | CSS display:flex !important + native scroll fade-in |
 | Card expand broken on mobile | Double click listeners (StrictMode) + iOS cursor:pointer | Stable handler refs + cursor:pointer CSS |
+| Cursor RAF never cancelled | Anonymous RAF loop + mousemove | Named functions, stored RAF ID, proper cleanup |
+| SocialIcons RAF leak × 3 icons | RAF per icon never cancelled, wrong cleanup target | Stored RAF IDs + listeners, cleanup from correct target |
+| SocialIcons stale coordinates | getBoundingClientRect cached once at mount | Recalculate rect on every mousemove |
+| Navbar resize listener stacks | Anonymous function in addEventListener | Named onResize, cleanup in return |
+| Scene touchmove stacking | New listener added inside touchstart on every touch | Single touchmove listener added once |
+| splitText recursive listeners | ScrollTrigger "refresh" re-adds listener every call | Guard flag prevents re-registration |
+| TechStack material flicker | Math.random() in JSX re-evaluated on render | Pre-computed materialIndex at module level |
+| Loading.tsx duplicate timers | setTimeout in render body, not useEffect | Moved to useEffect with [percent] dependency |
+| character.ts race condition | resolve() before bone positioning | Moved resolve() after all setup completes |
+| WorkImage 404 in production | fetch("src/assets/...") path doesn't exist after build | Removed dead video feature entirely |
 
 ---
 
@@ -539,3 +611,173 @@ Page Load
 **Key dependency chain:** Three.js → GLTF model → GSAP animations → Page ready
 
 This is why the loading screen exists — the 3D content must fully load before the page becomes interactive.
+
+---
+
+## Session 2: Homelab Docker Deployment & Cloudflare Tunnel
+
+> Session Date: 2026-03-15
+> Goal: Deploy the portfolio on Shivansh's homelab (NUC running Ubuntu) and expose it via Cloudflare Tunnel
+
+---
+
+### 25. Created Dockerfile, nginx.conf, and .dockerignore (Previous Session — DONE)
+
+**Files created:**
+- `Dockerfile` — Multi-stage build: Node 20 Alpine builds the app, Nginx Alpine serves static files (~25MB final image)
+- `nginx.conf` — SPA routing, gzip compression, cache headers (1yr for hashed assets, 30d for images/models, no-cache for index.html), security headers
+- `.dockerignore` — Excludes `node_modules`, `.git`, `.claude`, markdown files from build context
+
+---
+
+### 26. Created GitHub Actions CI/CD Pipeline for GHCR (DONE)
+
+**File created:** `.github/workflows/docker-publish.yml`
+
+**What:** On every push to `main`, the workflow:
+1. Checks out the code
+2. Logs in to GitHub Container Registry (GHCR)
+3. Builds the Docker image
+4. Pushes to `ghcr.io/thebrownhuman/shivanshportfolio:latest` (+ commit SHA tag)
+
+**Why:** Enables pulling pre-built images on the homelab without cloning the repo. Also enables Watchtower auto-updates (like the email service setup).
+
+**Status:** Workflow pushed and runs successfully. GHCR pull requires auth (repo is private) — homelab currently uses local `git clone` + `docker build` instead.
+
+---
+
+### 27. Fixed Unused useCallback Import Build Error (DONE)
+
+**File changed:** `src/components/TechStack.tsx` line 2
+
+**Before:** `import { useRef, useMemo, useState, useEffect, useCallback } from "react";`
+**After:** `import { useRef, useMemo, useState, useEffect } from "react";`
+
+**Why:** TypeScript strict mode (`tsc -b`) fails on unused imports. The Docker build runs `npm run build` which invokes `tsc -b && vite build`, causing the build to fail inside the container.
+
+---
+
+### 28. Deployed Portfolio Container on Homelab (DONE)
+
+**Commands run on Ubuntu homelab:**
+```bash
+git clone git@github.com:thebrownhuman/shivanshPortfolio.git portfolio
+cd portfolio
+docker build -t shivansh-portfolio .
+docker run -d -p 3001:80 --name portfolio shivansh-portfolio
+```
+
+**Port choice:** 3001 — Port 80 was already taken by `my-nginx` container.
+
+**Running containers on homelab after deployment:**
+| Container | Port | Image |
+|-----------|------|-------|
+| portfolio | 3001 | shivansh-portfolio (local build) |
+| email-service | 8085 | ghcr.io/thebrownhuman/emailserver |
+| progress_tracker | 4000 | progress-tracker |
+| watchtower | 8080 | containrrr/watchtower |
+| my-nginx | 80 | nginx |
+
+---
+
+### 29. Added Portfolio to Cloudflare Tunnel (DONE)
+
+**Existing tunnel:** `progress-tracker` (ID: `a51481be-b239-4958-9496-9440484cf097`)
+**Config location:** `/etc/cloudflared/config.yml`
+
+**Config updated (added the `shivanshmishra.in` entry):**
+```yaml
+tunnel: a51481be-b239-4958-9496-9440484cf097
+credentials-file: /home/shivansh/.cloudflared/a51481be-b239-4958-9496-9440484cf097.json
+ingress:
+  - hostname: progress.shivanshmishra.in
+    service: http://localhost:4000
+  - hostname: email.shivanshmishra.in
+    service: http://localhost:8085
+  - hostname: shivanshmishra.in
+    service: http://localhost:3001
+  - service: http_status:404
+```
+
+**Key detail:** The catch-all `- service: http_status:404` MUST always be the last entry. Cloudflare processes ingress rules top-to-bottom. Shivansh initially placed the portfolio entry after the catch-all — this was caught and corrected.
+
+**DNS:** Changed the existing `A` record for `shivanshmishra.in` (was pointing to `34.202.9.135`) to a `CNAME` pointing to `a51481be-b239-4958-9496-9440484cf097.cfargotunnel.com` (Proxied, orange cloud ON).
+
+**Service restarted:** `sudo systemctl restart cloudflared` — all 4 tunnel connections registered successfully.
+
+---
+
+### 30. Discovered and Fixed Git LFS Issue — character.glb Was a Pointer File (DONE)
+
+**Problem:** Site loaded but was stuck at the loading screen (66% → incrementing 1% every 2-4 seconds).
+
+**Investigation:**
+1. Server logs showed all assets served in under 1 second — server wasn't the bottleneck
+2. `character.glb` was returning only **132 bytes** in HTTP responses
+3. `ls -la` inside the Docker container confirmed: `character.glb` was 132 bytes
+4. The file was a **Git LFS pointer** (text file with SHA256 hash), not the actual 3D model
+5. A `.gitattributes` file in the `models/` directory confirmed LFS tracking
+
+**Root cause:** `git clone` on the homelab pulled the LFS pointer file instead of the actual binary. Git LFS was not installed on the homelab.
+
+**The pointer file contents:**
+```
+version https://git-lfs.github.com/spec/v1
+oid sha256:8f95d22496ee41a88672121bc507478839dadbe2fa0705b889b6ea0389cd360f
+size 2337328
+```
+
+**Fix:**
+```bash
+sudo apt install git-lfs -y
+git lfs install
+git lfs pull
+# Verified: character.glb now 2.3 MB
+docker stop portfolio && docker rm portfolio
+docker build -t shivansh-portfolio .
+docker run -d -p 3001:80 --name portfolio shivansh-portfolio
+```
+
+**Why the loading screen was stuck:** The `setProgress` function in `Loading.tsx` uses a fake progress bar that crawls after 50% (adds 0 or 1 every 2 seconds). Meanwhile, `loadCharacter()` in `Scene.tsx` tries to parse the GLB file. With only a 132-byte text file instead of a real 2.3 MB 3D model, the GLTFLoader/DRACOLoader couldn't parse it. The `loadCharacter()` promise never resolved, so `progress.loaded()` was never called, and the progress bar was stuck in its slow crawl phase.
+
+**Why it worked on localhost:** On the Windows dev machine, the actual GLB file was present (downloaded via Git LFS during initial clone). Only the homelab clone was missing Git LFS.
+
+---
+
+### 31. Diagnosed Chrome Cache Issue (DONE)
+
+**Problem:** After fixing the GLB file and rebuilding the container, the site was still slow on Chrome but **loaded instantly on Safari**.
+
+**Root cause:** Chrome had cached the old broken 132-byte GLB file with the nginx cache header (`Cache-Control: public`, 30-day expiry from the `/models/` location block). Safari had no cache, so it fetched the real 2.3 MB file.
+
+**Fix:** Hard clear Chrome cache for `shivanshmishra.in` via DevTools → Application → Clear site data, or `Ctrl + Shift + Delete`.
+
+**Lesson:** When serving broken files that later get fixed, the nginx cache headers can work against you. The 30-day cache on `/models/` meant Chrome stubbornly held onto the broken pointer file.
+
+---
+
+### Homelab Routing Summary
+
+| Subdomain | Service | Port | Tunnel |
+|-----------|---------|------|--------|
+| `shivanshmishra.in` | Portfolio | 3001 | progress-tracker |
+| `progress.shivanshmishra.in` | Progress Tracker | 4000 | progress-tracker |
+| `email.shivanshmishra.in` | Email Service | 8085 | progress-tracker |
+
+All services share the same Cloudflare Tunnel (`progress-tracker`). The tunnel name is just a label — routing is determined by the `config.yml` ingress rules, not the tunnel name.
+
+---
+
+### Update Workflow (Manual)
+
+To update the portfolio on the homelab after pushing changes:
+```bash
+cd ~/portfolio/shivanshPortfolio
+git pull
+git lfs pull  # Important: always pull LFS files
+docker stop portfolio && docker rm portfolio
+docker build -t shivansh-portfolio .
+docker run -d -p 3001:80 --name portfolio shivansh-portfolio
+```
+
+**Future improvement:** Set up GHCR authentication on the homelab so Watchtower can auto-pull and redeploy — same as the email service setup.

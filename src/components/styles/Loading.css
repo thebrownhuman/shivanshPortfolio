@@ -154,24 +154,6 @@
   animation: blink 1s linear infinite;
 }
 
-.loading-icon {
-  transform: scale(0);
-  opacity: 0;
-  transition: 0.5s;
-  transition-delay: 0.5s;
-}
-
-.loading-complete .loading-icon {
-  transform: scale(1);
-  opacity: 1;
-}
-
-.loading-clicked .loading-icon {
-  transition-delay: 0s;
-  transition: 1s;
-  transform: translateX(200px);
-}
-
 .loading-clicked .loading-content2 {
   overflow: visible;
 }

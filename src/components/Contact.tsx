@@ -21,7 +21,7 @@ const Contact = () => {
             <h4>Social</h4>
             <a
               href="https://github.com/thebrownhuman"
-              target="_blank"
+              target="_blank" rel="noopener noreferrer"
               data-cursor="disable"
               className="contact-social"
             >
@@ -29,7 +29,7 @@ const Contact = () => {
             </a>
             <a
               href="https://www.linkedin.com/in/thebrownhuman/"
-              target="_blank"
+              target="_blank" rel="noopener noreferrer"
               data-cursor="disable"
               className="contact-social"
             >
@@ -37,7 +37,7 @@ const Contact = () => {
             </a>
             <a
               href="https://www.instagram.com/thebrownhuman/"
-              target="_blank"
+              target="_blank" rel="noopener noreferrer"
               data-cursor="disable"
               className="contact-social"
             >

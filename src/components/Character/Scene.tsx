@@ -111,14 +111,9 @@ const Scene = () => {
     const onMouseMove = (event: MouseEvent) => {
       handleMouseMove(event, (x, y) => (mouse = { x, y }));
     };
-    let debounce: number | undefined;
-    const onTouchStart = (event: TouchEvent) => {
-      const element = event.target as HTMLElement;
-      debounce = setTimeout(() => {
-        element?.addEventListener("touchmove", (e: TouchEvent) =>
-          handleTouchMove(e, (x, y) => (mouse = { x, y }))
-        );
-      }, 200);
+    // Single touchmove handler — added once to landingDiv, not stacked per touch
+    const onTouchMove = (e: TouchEvent) => {
+      handleTouchMove(e, (x, y) => (mouse = { x, y }));
     };
 
     const onTouchEnd = () => {
@@ -131,7 +126,7 @@ const Scene = () => {
     document.addEventListener("mousemove", onMouseMove);
     const landingDiv = document.getElementById("landingDiv");
     if (landingDiv) {
-      landingDiv.addEventListener("touchstart", onTouchStart);
+      landingDiv.addEventListener("touchmove", onTouchMove);
       landingDiv.addEventListener("touchend", onTouchEnd);
     }
     const animate = () => {
@@ -156,7 +151,6 @@ const Scene = () => {
     animate();
     return () => {
       disposed = true;
-      clearTimeout(debounce);
       cancelAnimationFrame(animFrameId);
       progress.dispose();
       scene.clear();
@@ -167,7 +161,7 @@ const Scene = () => {
         currentDiv.removeChild(renderer.domElement);
       }
       if (landingDiv) {
-        landingDiv.removeEventListener("touchstart", onTouchStart);
+        landingDiv.removeEventListener("touchmove", onTouchMove);
         landingDiv.removeEventListener("touchend", onTouchEnd);
       }
     };

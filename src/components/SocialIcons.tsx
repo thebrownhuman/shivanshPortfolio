@@ -11,14 +11,15 @@ import HoverLinks from "./HoverLinks";
 const SocialIcons = () => {
   useEffect(() => {
     const social = document.getElementById("social") as HTMLElement;
+    const rafIds: number[] = [];
+    const listeners: Array<{ target: EventTarget; event: string; handler: (e: any) => void }> = [];
 
     social.querySelectorAll("span").forEach((item) => {
       const elem = item as HTMLElement;
       const link = elem.querySelector("a") as HTMLElement;
 
-      const rect = elem.getBoundingClientRect();
-      let mouseX = rect.width / 2;
-      let mouseY = rect.height / 2;
+      let mouseX = 0;
+      let mouseY = 0;
       let currentX = 0;
       let currentY = 0;
 
@@ -29,10 +30,13 @@ const SocialIcons = () => {
         link.style.setProperty("--siLeft", `${currentX}px`);
         link.style.setProperty("--siTop", `${currentY}px`);
 
-        requestAnimationFrame(updatePosition);
+        const id = requestAnimationFrame(updatePosition);
+        rafIds.push(id);
       };
 
       const onMouseMove = (e: MouseEvent) => {
+        // Recalculate rect on every move to avoid stale coordinates after scroll/resize
+        const rect = elem.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
@@ -46,30 +50,40 @@ const SocialIcons = () => {
       };
 
       document.addEventListener("mousemove", onMouseMove);
+      listeners.push({ target: document, event: "mousemove", handler: onMouseMove });
 
-      updatePosition();
+      // Initialize position from current rect
+      const initRect = elem.getBoundingClientRect();
+      mouseX = initRect.width / 2;
+      mouseY = initRect.height / 2;
 
-      return () => {
-        elem.removeEventListener("mousemove", onMouseMove);
-      };
+      const id = requestAnimationFrame(updatePosition);
+      rafIds.push(id);
     });
+
+    return () => {
+      rafIds.forEach((id) => cancelAnimationFrame(id));
+      listeners.forEach(({ target, event, handler }) =>
+        target.removeEventListener(event, handler)
+      );
+    };
   }, []);
 
   return (
     <div className="icons-section">
       <div className="social-icons" data-cursor="icons" id="social">
         <span>
-          <a href="https://github.com/thebrownhuman" target="_blank">
+          <a href="https://github.com/thebrownhuman" target="_blank" rel="noopener noreferrer">
             <FaGithub />
           </a>
         </span>
         <span>
-          <a href="https://www.linkedin.com/in/thebrownhuman/" target="_blank">
+          <a href="https://www.linkedin.com/in/thebrownhuman/" target="_blank" rel="noopener noreferrer">
             <FaLinkedinIn />
           </a>
         </span>
         <span>
-          <a href="https://www.instagram.com/thebrownhuman/" target="_blank">
+          <a href="https://www.instagram.com/thebrownhuman/" target="_blank" rel="noopener noreferrer">
             <FaInstagram />
           </a>
         </span>
